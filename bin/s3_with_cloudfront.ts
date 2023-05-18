@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
-import * as cdk from 'aws-cdk-lib';
+import * as cdk from '@aws-cdk/core';
 import { S3WithCloudfrontStack } from '../lib/s3_with_cloudfront-stack';
 
 const app = new cdk.App();
@@ -15,7 +15,7 @@ new S3WithCloudfrontStack(app, 'S3WithCloudfrontStack', {
 
   /* Uncomment the next line if you know exactly what Account and Region you
    * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
+  // env: { account: '844602212051', region: 'ap-northeast-1' },
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
