@@ -1,0 +1,51 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MyStack = void 0;
+const cdk = require("@aws-cdk/core");
+const ec2 = require("@aws-cdk/aws-ec2");
+class MyStack extends cdk.Stack {
+    constructor(scope, id, props) {
+        super(scope, id, props);
+        // Create the VPC with isolated subnets
+        const vpc = new ec2.Vpc(this, 'MyVpc', {
+            maxAzs: 1,
+            subnetConfiguration: [
+                {
+                    subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
+                    cidrMask: 24,
+                    name: 'IsolatedSubnets',
+                },
+            ],
+        });
+        // Create the route table for the isolated subnets
+        const routeTable = new ec2.CfnRouteTable(this, 'RouteTable', {
+            vpcId: vpc.vpcId,
+        });
+        // Associate the route table with the isolated subnets
+        vpc.isolatedSubnets.forEach((subnet, index) => {
+            new ec2.CfnSubnetRouteTableAssociation(this, `RouteTableAssociation${index}`, {
+                subnetId: subnet.subnetId,
+                routeTableId: routeTable.ref,
+            });
+        });
+        // EFS のセキュリティグループを作成
+        const efsSg = new ec2.SecurityGroup(this, 'MyEfsSecurityGroup', {
+            vpc: vpc,
+            allowAllOutbound: true,
+        });
+        // セキュリティグループのインバウンドルールを設定して、EFS アクセスを許可
+        efsSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(2049), 'Allow EFS access');
+        // Create an EC2 instance in the isolated subnet
+        new ec2.Instance(this, 'MyInstance', {
+            vpc: vpc,
+            instanceType: new ec2.InstanceType('t2.micro'),
+            machineImage: new ec2.AmazonLinuxImage({
+                generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+            }),
+            vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+            securityGroup: efsSg,
+        });
+    }
+}
+exports.MyStack = MyStack;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoibXktc3RhY2suanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyJteS1zdGFjay50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7QUFBQSxxQ0FBcUM7QUFDckMsd0NBQXdDO0FBR3hDLE1BQWEsT0FBUSxTQUFRLEdBQUcsQ0FBQyxLQUFLO0lBQ3BDLFlBQVksS0FBb0IsRUFBRSxFQUFVLEVBQUUsS0FBc0I7UUFDbEUsS0FBSyxDQUFDLEtBQUssRUFBRSxFQUFFLEVBQUUsS0FBSyxDQUFDLENBQUM7UUFFeEIsdUNBQXVDO1FBQ3ZDLE1BQU0sR0FBRyxHQUFHLElBQUksR0FBRyxDQUFDLEdBQUcsQ0FBQyxJQUFJLEVBQUUsT0FBTyxFQUFFO1lBQ3JDLE1BQU0sRUFBRSxDQUFDO1lBQ1QsbUJBQW1CLEVBQUU7Z0JBQ25CO29CQUNFLFVBQVUsRUFBRSxHQUFHLENBQUMsVUFBVSxDQUFDLGdCQUFnQjtvQkFDM0MsUUFBUSxFQUFFLEVBQUU7b0JBQ1osSUFBSSxFQUFFLGlCQUFpQjtpQkFDeEI7YUFDRjtTQUNGLENBQUMsQ0FBQztRQUVILGtEQUFrRDtRQUNsRCxNQUFNLFVBQVUsR0FBRyxJQUFJLEdBQUcsQ0FBQyxhQUFhLENBQUMsSUFBSSxFQUFFLFlBQVksRUFBRTtZQUMzRCxLQUFLLEVBQUUsR0FBRyxDQUFDLEtBQUs7U0FDakIsQ0FBQyxDQUFDO1FBRUgsc0RBQXNEO1FBQ3RELEdBQUcsQ0FBQyxlQUFlLENBQUMsT0FBTyxDQUFDLENBQUMsTUFBTSxFQUFFLEtBQUssRUFBRSxFQUFFO1lBQzVDLElBQUksR0FBRyxDQUFDLDhCQUE4QixDQUFDLElBQUksRUFBRSx3QkFBd0IsS0FBSyxFQUFFLEVBQUU7Z0JBQzVFLFFBQVEsRUFBRSxNQUFNLENBQUMsUUFBUTtnQkFDekIsWUFBWSxFQUFFLFVBQVUsQ0FBQyxHQUFHO2FBQzdCLENBQUMsQ0FBQztRQUNMLENBQUMsQ0FBQyxDQUFDO1FBRUgscUJBQXFCO1FBQ3JCLE1BQU0sS0FBSyxHQUFHLElBQUksR0FBRyxDQUFDLGFBQWEsQ0FBQyxJQUFJLEVBQUUsb0JBQW9CLEVBQUU7WUFDOUQsR0FBRyxFQUFFLEdBQUc7WUFDUixnQkFBZ0IsRUFBRSxJQUFJO1NBQ3ZCLENBQUMsQ0FBQztRQUVILHdDQUF3QztRQUN4QyxLQUFLLENBQUMsY0FBYyxDQUFDLEdBQUcsQ0FBQyxJQUFJLENBQUMsT0FBTyxFQUFFLEVBQUUsR0FBRyxDQUFDLElBQUksQ0FBQyxHQUFHLENBQUMsSUFBSSxDQUFDLEVBQUUsa0JBQWtCLENBQUMsQ0FBQztRQUVqRixnREFBZ0Q7UUFDaEQsSUFBSSxHQUFHLENBQUMsUUFBUSxDQUFDLElBQUksRUFBRSxZQUFZLEVBQUU7WUFDbkMsR0FBRyxFQUFFLEdBQUc7WUFDUixZQUFZLEVBQUUsSUFBSSxHQUFHLENBQUMsWUFBWSxDQUFDLFVBQVUsQ0FBQztZQUM5QyxZQUFZLEVBQUUsSUFBSSxHQUFHLENBQUMsZ0JBQWdCLENBQUM7Z0JBQ3JDLFVBQVUsRUFBRSxHQUFHLENBQUMscUJBQXFCLENBQUMsY0FBYzthQUNyRCxDQUFDO1lBQ0YsVUFBVSxFQUFFLEVBQUUsVUFBVSxFQUFFLEdBQUcsQ0FBQyxVQUFVLENBQUMsZ0JBQWdCLEVBQUU7WUFDM0QsYUFBYSxFQUFFLEtBQUs7U0FDckIsQ0FBQyxDQUFDO0lBQ0wsQ0FBQztDQUNGO0FBakRELDBCQWlEQyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCAqIGFzIGNkayBmcm9tICdAYXdzLWNkay9jb3JlJztcbmltcG9ydCAqIGFzIGVjMiBmcm9tICdAYXdzLWNkay9hd3MtZWMyJztcbmltcG9ydCAqIGFzIGVmcyBmcm9tICdAYXdzLWNkay9hd3MtZWZzJztcblxuZXhwb3J0IGNsYXNzIE15U3RhY2sgZXh0ZW5kcyBjZGsuU3RhY2sge1xuICBjb25zdHJ1Y3RvcihzY29wZTogY2RrLkNvbnN0cnVjdCwgaWQ6IHN0cmluZywgcHJvcHM/OiBjZGsuU3RhY2tQcm9wcykge1xuICAgIHN1cGVyKHNjb3BlLCBpZCwgcHJvcHMpO1xuXG4gICAgLy8gQ3JlYXRlIHRoZSBWUEMgd2l0aCBpc29sYXRlZCBzdWJuZXRzXG4gICAgY29uc3QgdnBjID0gbmV3IGVjMi5WcGModGhpcywgJ015VnBjJywge1xuICAgICAgbWF4QXpzOiAxLFxuICAgICAgc3VibmV0Q29uZmlndXJhdGlvbjogW1xuICAgICAgICB7XG4gICAgICAgICAgc3VibmV0VHlwZTogZWMyLlN1Ym5ldFR5cGUuUFJJVkFURV9JU09MQVRFRCxcbiAgICAgICAgICBjaWRyTWFzazogMjQsXG4gICAgICAgICAgbmFtZTogJ0lzb2xhdGVkU3VibmV0cycsXG4gICAgICAgIH0sXG4gICAgICBdLFxuICAgIH0pO1xuXG4gICAgLy8gQ3JlYXRlIHRoZSByb3V0ZSB0YWJsZSBmb3IgdGhlIGlzb2xhdGVkIHN1Ym5ldHNcbiAgICBjb25zdCByb3V0ZVRhYmxlID0gbmV3IGVjMi5DZm5Sb3V0ZVRhYmxlKHRoaXMsICdSb3V0ZVRhYmxlJywge1xuICAgICAgdnBjSWQ6IHZwYy52cGNJZCxcbiAgICB9KTtcblxuICAgIC8vIEFzc29jaWF0ZSB0aGUgcm91dGUgdGFibGUgd2l0aCB0aGUgaXNvbGF0ZWQgc3VibmV0c1xuICAgIHZwYy5pc29sYXRlZFN1Ym5ldHMuZm9yRWFjaCgoc3VibmV0LCBpbmRleCkgPT4ge1xuICAgICAgbmV3IGVjMi5DZm5TdWJuZXRSb3V0ZVRhYmxlQXNzb2NpYXRpb24odGhpcywgYFJvdXRlVGFibGVBc3NvY2lhdGlvbiR7aW5kZXh9YCwge1xuICAgICAgICBzdWJuZXRJZDogc3VibmV0LnN1Ym5ldElkLFxuICAgICAgICByb3V0ZVRhYmxlSWQ6IHJvdXRlVGFibGUucmVmLFxuICAgICAgfSk7XG4gICAgfSk7XG5cbiAgICAvLyBFRlMg44Gu44K744Kt44Ol44Oq44OG44Kj44Kw44Or44O844OX44KS5L2c5oiQXG4gICAgY29uc3QgZWZzU2cgPSBuZXcgZWMyLlNlY3VyaXR5R3JvdXAodGhpcywgJ015RWZzU2VjdXJpdHlHcm91cCcsIHtcbiAgICAgIHZwYzogdnBjLFxuICAgICAgYWxsb3dBbGxPdXRib3VuZDogdHJ1ZSxcbiAgICB9KTtcblxuICAgIC8vIOOCu+OCreODpeODquODhuOCo+OCsOODq+ODvOODl+OBruOCpOODs+ODkOOCpuODs+ODieODq+ODvOODq+OCkuioreWumuOBl+OBpuOAgUVGUyDjgqLjgq/jgrvjgrnjgpLoqLHlj69cbiAgICBlZnNTZy5hZGRJbmdyZXNzUnVsZShlYzIuUGVlci5hbnlJcHY0KCksIGVjMi5Qb3J0LnRjcCgyMDQ5KSwgJ0FsbG93IEVGUyBhY2Nlc3MnKTtcblxuICAgIC8vIENyZWF0ZSBhbiBFQzIgaW5zdGFuY2UgaW4gdGhlIGlzb2xhdGVkIHN1Ym5ldFxuICAgIG5ldyBlYzIuSW5zdGFuY2UodGhpcywgJ015SW5zdGFuY2UnLCB7XG4gICAgICB2cGM6IHZwYyxcbiAgICAgIGluc3RhbmNlVHlwZTogbmV3IGVjMi5JbnN0YW5jZVR5cGUoJ3QyLm1pY3JvJyksXG4gICAgICBtYWNoaW5lSW1hZ2U6IG5ldyBlYzIuQW1hem9uTGludXhJbWFnZSh7XG4gICAgICAgIGdlbmVyYXRpb246IGVjMi5BbWF6b25MaW51eEdlbmVyYXRpb24uQU1BWk9OX0xJTlVYXzIsXG4gICAgICB9KSxcbiAgICAgIHZwY1N1Ym5ldHM6IHsgc3VibmV0VHlwZTogZWMyLlN1Ym5ldFR5cGUuUFJJVkFURV9JU09MQVRFRCB9LFxuICAgICAgc2VjdXJpdHlHcm91cDogZWZzU2csXG4gICAgfSk7XG4gIH1cbn0iXX0=

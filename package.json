@@ -24,6 +24,7 @@
     "@aws-cdk/aws-cloudfront": "^1.201.0",
     "@aws-cdk/aws-cloudfront-origins": "^1.201.0",
     "@aws-cdk/aws-ec2": "^1.201.0",
+    "@aws-cdk/aws-efs": "^1.202.0",
     "@aws-cdk/aws-lambda": "^1.201.0",
     "@aws-cdk/aws-s3": "^1.201.0",
     "aws-cdk-lib": "2.77.0",
